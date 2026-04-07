@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="vi" data-light>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>24521617 - Dang Tuan Thanh - Dictionary Radix-Trie</title>
+<link href="https://fonts.googleapis.com/css2?family=Anybody:wght@300;400;600;800&family=Martian+Mono:wght@300;400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0d0d;--bg2:#141414;--bg3:#1a1a1a;--bg4:#222;
+  --border:#2a2a2a;--border2:#333;
+  --fg:#f0ede6;--fg2:#a8a49c;--fg3:#5a5752;
+  --green:#00e676;--green-dim:#00e67622;--green-dim2:#00e67611;
+  --amber:#ffb300;--amber-dim:#ffb30020;
+  --red:#ff4444;--red-dim:#ff444420;
+  --blue:#4fc3f7;--blue-dim:#4fc3f720;
+  --r:8px;--r2:14px;
+  --mono:'Martian Mono',monospace;
+  --display:'Anybody',sans-serif;
+}
+[data-light]{
+  --bg:#f5f2ec;--bg2:#eeebe3;--bg3:#e6e2d8;--bg4:#ddd9ce;
+  --border:#d4d0c8;--border2:#c8c4ba;
+  --fg:#1a1816;--fg2:#5a5550;--fg3:#a8a49c;
+  --green:#1a7a40;--green-dim:#1a7a4018;--green-dim2:#1a7a400c;
+  --amber:#8a6000;--amber-dim:#8a600018;
+  --red:#c02020;--red-dim:#c0202018;
+  --blue:#0060a0;--blue-dim:#0060a018;
+}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:var(--mono);
+  background:var(--bg);
+  color:var(--fg);
+  display:flex;flex-direction:column;
+  transition:background .25s,color .25s;
+  line-height:1.5;
+}
+
+/* ── TOP BAR ── */
+.topbar{
+  display:flex;align-items:center;gap:0;
+  height:48px;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+  padding:0 16px;
+  flex-shrink:0;
+  position:relative;z-index:50;
+}
+.logo{
+  font-family:var(--display);font-weight:800;font-size:1.15rem;
+  letter-spacing:-.03em;color:var(--fg);
+  display:flex;align-items:center;gap:2px;
+  margin-right:24px;
+}
+.logo .dot{color:var(--green);font-size:1.4rem;line-height:0;position:relative;top:2px}
+.tab-bar{display:flex;gap:2px;flex:1}
+.tab{
+  font-family:var(--display);font-size:.72rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:6px 16px;border-radius:6px;cursor:pointer;
+  color:var(--fg3);background:transparent;border:none;
+  transition:all .15s;position:relative;
+}
+.tab:hover{color:var(--fg2);background:var(--bg3)}
+.tab.active{color:var(--green);background:var(--green-dim)}
+.tab.active::after{
+  content:'';position:absolute;bottom:-9px;left:16px;right:16px;
+  height:1px;background:var(--green);
+}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.word-badge{
+  font-size:.68rem;color:var(--fg3);
+  background:var(--bg4);border:1px solid var(--border2);
+  padding:3px 10px;border-radius:20px;font-family:var(--mono);
+}
+.icon-btn{
+  width:32px;height:32px;border-radius:7px;
+  border:1px solid var(--border2);background:var(--bg3);
+  color:var(--fg2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.icon-btn:hover{background:var(--bg4);color:var(--fg)}
+.icon-btn svg{width:15px;height:15px}
+
+/* ── PANELS ── */
+.panels{display:flex;flex:1;overflow:hidden}
+
+/* ── SEARCH PANEL ── */
+.search-panel{
+  width:420px;flex-shrink:0;
+  display:flex;flex-direction:column;
+  border-right:1px solid var(--border);
+  background:var(--bg);
+  overflow:hidden;
+}
+.search-box{
+  padding:16px;border-bottom:1px solid var(--border);
+  position:relative;
+}
+.search-input-wrap{position:relative}
+.search-icon{
+  position:absolute;left:13px;top:50%;transform:translateY(-50%);
+  color:var(--fg3);pointer-events:none;
+}
+.search-icon svg{width:16px;height:16px}
+#search-input{
+  width:100%;padding:11px 40px 11px 38px;
+  background:var(--bg3);border:1.5px solid var(--border2);
+  border-radius:var(--r);
+  font-family:var(--display);font-size:1.1rem;font-weight:400;
+  color:var(--fg);outline:none;
+  transition:border-color .15s,box-shadow .15s,background .25s;
+  caret-color:var(--green);
+}
+#search-input::placeholder{color:var(--fg3)}
+#search-input:focus{
+  border-color:var(--green);
+  box-shadow:0 0 0 3px var(--green-dim);
+  background:var(--bg2);
+}
+.clear-btn{
+  position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--fg3);cursor:pointer;
+  width:22px;height:22px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .1s;font-size:.9rem;
+}
+.clear-btn:hover{color:var(--fg);background:var(--bg4)}
+
+/* ── SUGGESTIONS ── */
+.suggestions{
+  flex:1;overflow-y:auto;
+  padding:6px 8px;
+}
+.suggestion-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 10px;border-radius:var(--r);
+  cursor:pointer;transition:background .1s;
+  border:1px solid transparent;
+  margin-bottom:2px;
+}
+.suggestion-item:hover,.suggestion-item.selected{
+  background:var(--bg3);border-color:var(--border);
+}
+.suggestion-item.exact{
+  background:var(--green-dim2);border-color:var(--green);
+}
+.sug-word{
+  font-family:var(--display);font-weight:600;font-size:1rem;
+  color:var(--fg);min-width:100px;
+}
+.sug-word .match{color:var(--green)}
+.sug-def{
+  font-size:.75rem;color:var(--fg2);
+  overflow:hidden;display:-webkit-box;
+  -webkit-line-clamp:2;-webkit-box-orient:vertical;
+  line-height:1.5;flex:1;
+}
+.sug-pos{
+  font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--green);
+  text-transform:uppercase;margin-right:4px;
+}
+.sug-empty{
+  text-align:center;padding:48px 20px;
+  color:var(--fg3);font-size:.8rem;line-height:2;
+}
+.sug-empty .big{font-family:var(--display);font-size:2rem;color:var(--border2);display:block;margin-bottom:8px}
+
+/* ── RESULT PANEL ── */
+.result-panel{
+  flex:1;overflow-y:auto;
+  padding:28px 32px;
+  display:flex;flex-direction:column;gap:0;
+}
+.result-empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;color:var(--fg3);text-align:center;gap:12px;
+  font-size:.82rem;
+}
+.result-empty .ascii{
+  font-size:.65rem;line-height:1.4;color:var(--border2);
+  font-family:var(--mono);white-space:pre;
+}
+.result-word{
+  font-family:var(--display);font-weight:800;font-size:2.8rem;
+  letter-spacing:-.04em;color:var(--fg);
+  margin-bottom:4px;line-height:1;
+}
+.result-pos{
+  font-size:.72rem;color:var(--green);letter-spacing:.1em;text-transform:uppercase;
+  font-family:var(--display);font-weight:600;margin-bottom:20px;
+}
+.result-def-box{
+  border-left:2px solid var(--green);padding-left:16px;
+  margin-bottom:28px;font-family:var(--display);
+}
+.def-basic{
+  font-size:1.1rem;color:var(--fg);font-weight:600;line-height:1.5;
+}
+.def-other{
+  font-size:.9rem;color:var(--fg2);font-weight:300;line-height:1.6;
+  margin-top:8px;white-space:pre-wrap;
+}
+.result-actions{display:flex;gap:8px;flex-wrap:wrap}
+.action-btn{
+  font-family:var(--display);font-size:.72rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 16px;border-radius:var(--r);cursor:pointer;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--fg2);transition:all .15s;
+  display:flex;align-items:center;gap:6px;
+}
+.action-btn:hover{background:var(--bg3);color:var(--fg)}
+.action-btn.danger{color:var(--red)}
+.action-btn.danger:hover{background:var(--red-dim);border-color:var(--red)}
+
+.edit-form{
+  display:none;flex-direction:column;gap:10px;
+  margin-top:24px;padding:16px;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r2);
+}
+.edit-form.show{display:flex}
+.edit-form label{font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3)}
+.edit-form input,.edit-form textarea, .edit-form select{
+  background:var(--bg2);border:1.5px solid var(--border2);
+  border-radius:var(--r);padding:9px 12px;
+  font-family:var(--display);font-size:.95rem;font-weight:300;
+  color:var(--fg);outline:none;
+  transition:border-color .15s;
+}
+.edit-form input:focus,.edit-form textarea:focus, .edit-form select:focus{border-color:var(--green)}
+.edit-form textarea{resize:vertical;min-height:80px}
+.edit-btns{display:flex;gap:8px;margin-top:6px}
+.btn-save{
+  background:var(--green);color:#000;border:none;
+  padding:8px 20px;border-radius:var(--r);cursor:pointer;
+  font-family:var(--display);font-size:.75rem;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;transition:opacity .15s;
+}
+.btn-save:hover{opacity:.85}
+.btn-cancel{
+  background:transparent;color:var(--fg3);border:1px solid var(--border2);
+  padding:8px 16px;border-radius:var(--r);cursor:pointer;
+  font-family:var(--display);font-size:.75rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;transition:all .15s;
+}
+.btn-cancel:hover{background:var(--bg4);color:var(--fg)}
+
+/* ── MERGED DB & TREE PANEL ── */
+.merged-panel{
+  display:none;flex:1;overflow:hidden;
+}
+.merged-panel.active{display:flex}
+.db-side{
+  width:500px;flex-shrink:0;display:flex;
+  border-right:1px solid var(--border);
+}
+.db-list{
+  width:200px;flex-shrink:0;
+  border-right:1px solid var(--border);
+  overflow-y:auto;padding:8px;
+  background:var(--bg);
+}
+.db-item{
+  padding:8px 10px;border-radius:6px;cursor:pointer;
+  font-family:var(--display);font-size:.85rem;font-weight:400;
+  color:var(--fg2);transition:all .12s;border:1px solid transparent;
+  margin-bottom:2px;display:flex;justify-content:space-between;align-items:center;
+}
+.db-item:hover{background:var(--bg3);color:var(--fg)}
+.db-item.active-item{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.db-item-del{
+  background:none;border:none;color:var(--fg3);cursor:pointer;
+  padding:2px 5px;border-radius:4px;font-size:.85rem;opacity:0;transition:all .1s;
+}
+.db-item:hover .db-item-del{opacity:1}
+.db-item-del:hover{color:var(--red);background:var(--red-dim)}
+.db-main{flex:1;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:16px;background:var(--bg)}
+.db-title{font-family:var(--display);font-size:1.15rem;font-weight:800;color:var(--fg);padding-bottom:12px;border-bottom:1px solid var(--border)}
+
+/* Custom Section Card for DB Tool */
+.db-section {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--r2);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.db-section-title {
+  font-family: var(--display);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.db-section-desc {
+  font-size: 0.72rem;
+  color: var(--fg3);
+  margin-top: -6px;
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.db-section input, .db-section textarea, .db-section select {
+  background: var(--bg2);
+  border: 1.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  font-family: var(--display);
+  font-size: .9rem;
+  font-weight: 400;
+  color: var(--fg);
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+.db-section select { cursor: pointer; font-family: var(--mono); font-size: 0.85rem;}
+.db-section input:focus, .db-section textarea:focus, .db-section select:focus { border-color: var(--green); }
+.db-section textarea { resize: vertical; min-height: 70px; }
+
+.tree-side{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);
+}
+.tree-toolbar{
+  display:flex;align-items:center;gap:10px;padding:10px 16px;
+  border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;
+  flex-wrap:wrap;
+}
+.tree-toolbar-title{font-family:var(--display);font-weight:700;font-size:.8rem;color:var(--fg2);letter-spacing:.05em}
+.tree-wrap{flex:1;overflow:auto;position:relative}
+#tree-canvas{display:block;cursor:default}
+.tree-legend{
+  display:flex;gap:14px;flex-wrap:wrap;
+  padding:8px 16px;border-top:1px solid var(--border);
+  background:var(--bg2);flex-shrink:0;
+}
+.leg{display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--fg3);letter-spacing:.05em;text-transform:uppercase;font-family:var(--display);font-weight:600}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:var(--bg3);border:1px solid var(--border2);
+  padding:10px 20px;border-radius:var(--r2);
+  font-family:var(--display);font-size:.78rem;font-weight:600;
+  color:var(--fg);opacity:0;pointer-events:none;z-index:999;
+  transition:all .25s;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{border-color:var(--green);color:var(--green);background:var(--green-dim)}
+#toast.err{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── UTIL ── */
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo">Từ điển tiếng Anh</div>
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('search')">
+      <svg style="width:11px;height:11px;margin-right:5px;vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Tra từ
+    </button>
+    <button class="tab" onclick="switchTab('db')">
+      <svg style="width:11px;height:11px;margin-right:5px;vertical-align:-1px" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Database & Tree
+    </button>
+  </div>
+  <div class="topbar-right">
+    <div class="word-badge" id="word-badge">0 từ</div>
+    <button class="icon-btn" onclick="toggleTheme()" title="Đổi theme" id="theme-btn">
+      <svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="panels">
+
+  <div id="tab-search" style="display:flex;flex:1;overflow:hidden">
+    <div class="search-panel">
+      <div class="search-box">
+        <div class="search-input-wrap">
+          <span class="search-icon"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+          <input id="search-input" type="text" placeholder="Nhập từ để tra..." autocomplete="off" spellcheck="false"/>
+          <button class="clear-btn hidden" id="clear-btn" onclick="clearSearch()">✕</button>
+        </div>
+      </div>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="result-panel" id="result-panel">
+      <div class="result-empty" id="result-empty">
+        <pre class="ascii">  ┌─────────────┐
+  │  L e x i   │
+  │  T r i e   │
+  └─────────────┘</pre>
+        <div>Nhập từ bên trái để bắt đầu tra cứu</div>
+      </div>
+      <div id="result-content" class="hidden">
+        <div class="result-word" id="r-word"></div>
+        <div class="result-pos" id="r-pos">● noun</div>
+        <div class="result-def-box" id="r-def"></div>
+        <div class="result-actions">
+          <button class="action-btn" onclick="toggleEdit()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Chỉnh sửa
+          </button>
+          <button class="action-btn danger" onclick="deleteCurrentWord()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            Xóa từ
+          </button>
+          <button class="action-btn" onclick="showInTree()">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 0 0-5.36-1.857"/><path d="M9 20H4v-2a3 3 0 0 1 5.36-1.857"/><circle cx="12" cy="7" r="4"/></svg>
+            Xem trên cây
+          </button>
+        </div>
+        
+        <div class="edit-form" id="edit-form">
+          <div class="add-form-title">Chỉnh sửa từ điển</div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1">
+              <label>Từ loại</label>
+              <select id="edit-pos" style="width:100%;margin-top:4px;">
+                <option value="noun">Noun (Danh từ)</option>
+                <option value="verb">Verb (Động từ)</option>
+                <option value="adj">Adjective (Tính từ)</option>
+                <option value="adv">Adverb (Trạng từ)</option>
+                <option value="prep">Preposition (Giới từ)</option>
+                <option value="pron">Pronoun (Đại từ)</option>
+                <option value="conj">Conjunction (Liên từ)</option>
+                <option value="other">Khác</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>Nghĩa cơ bản</label>
+            <input id="edit-basic" style="width:100%;margin-top:4px;" />
+          </div>
+          <div>
+            <label>Định nghĩa khác / Ví dụ</label>
+            <textarea id="edit-other" rows="3" style="width:100%;margin-top:4px;"></textarea>
+          </div>
+          <div class="edit-btns">
+            <button class="btn-save" onclick="saveEdit()">Lưu thay đổi</button>
+            <button class="btn-cancel" onclick="toggleEdit(true)">Hủy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-db" class="merged-panel">
+    <div class="db-side">
+      <div class="db-list" id="db-list"></div>
+      <div class="db-main">
+        <div class="db-title">Quản lý từ điển</div>
+        
+        <div class="db-section">
+          <div class="db-section-title">
+            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+            Lọc danh sách
+          </div>
+          <div class="db-section-desc">Lọc các từ đang hiển thị ở cột bên trái.</div>
+          <input id="db-search" placeholder="Nhập từ khóa cần lọc..." oninput="renderDbList()"/>
+          <select id="db-filter-pos" onchange="renderDbList()">
+            <option value="">-- Tất cả từ loại --</option>
+            <option value="noun">Noun (Danh từ)</option>
+            <option value="verb">Verb (Động từ)</option>
+            <option value="adj">Adjective (Tính từ)</option>
+            <option value="adv">Adverb (Trạng từ)</option>
+            <option value="prep">Preposition (Giới từ)</option>
+            <option value="pron">Pronoun (Đại từ)</option>
+            <option value="conj">Conjunction (Liên từ)</option>
+            <option value="other">Khác</option>
+          </select>
+        </div>
+
+        <div class="db-section">
+          <div class="db-section-title">
+            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+            Tìm kiếm / Xóa
+          </div>
+          <div class="db-section-desc">Nhập 1 từ tiếng Anh để tìm kiếm trên cây hoặc xóa.</div>
+          <input id="db-exact-input" placeholder="Nhập từ cần tìm/xóa..." autocomplete="off"/>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-save" style="flex:1; display:flex; justify-content:center;" onclick="dbExactSearch()">Tìm trên cây</button>
+            <button class="btn-cancel" style="flex:1; color:var(--red); border-color:var(--border2); display:flex; justify-content:center;" onclick="dbExactDelete()">Xóa từ này</button>
+          </div>
+        </div>
+
+        <div class="db-section">
+          <div class="db-section-title">
+            <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Thêm từ mới
+          </div>
+          <div class="db-section-desc">Bổ sung từ vựng và định nghĩa vào cấu trúc cây Trie.</div>
+          <input id="new-word" placeholder="Từ tiếng Anh..." autocomplete="off"/>
+          <select id="new-pos">
+            <option value="noun">Noun (Danh từ)</option>
+            <option value="verb">Verb (Động từ)</option>
+            <option value="adj">Adjective (Tính từ)</option>
+            <option value="adv">Adverb (Trạng từ)</option>
+            <option value="prep">Preposition (Giới từ)</option>
+            <option value="pron">Pronoun (Đại từ)</option>
+            <option value="conj">Conjunction (Liên từ)</option>
+            <option value="other">Khác</option>
+          </select>
+          <input id="new-basic" placeholder="Nghĩa cơ bản (ngắn gọn)..."/>
+          <textarea id="new-other" placeholder="Định nghĩa khác / Ví dụ (không bắt buộc)..."></textarea>
+          <button class="btn-save" style="align-self:flex-start" onclick="addWord()">Thêm vào từ điển</button>
+        </div>
+        
+        <div id="db-detail" class="db-section" style="display:none; border-color:var(--green);">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <div id="db-detail-word" style="font-family:var(--display);font-weight:800;font-size:1.6rem;color:var(--fg);margin-bottom:2px"></div>
+              <div id="db-detail-pos" style="font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--green);text-transform:uppercase;margin-bottom:12px;letter-spacing:0.05em"></div>
+            </div>
+            <button class="icon-btn" onclick="document.getElementById('db-detail').style.display='none'" style="width:24px;height:24px;">×</button>
+          </div>
+          <div id="db-detail-def" class="result-def-box" style="margin-bottom:8px;"></div>
+          
+          <div style="display:flex;gap:8px">
+            <button class="btn-save" style="background:var(--bg4);color:var(--fg);border:1px solid var(--border2)" onclick="startDbEdit()">Sửa thông tin</button>
+            <button class="btn-cancel" style="color:var(--red)" onclick="dbDeleteSelected()">Xóa</button>
+          </div>
+          
+          <div id="db-edit-area" style="display:none;margin-top:10px;flex-direction:column;gap:10px;border-top:1px dashed var(--border2);padding-top:16px;">
+            <select id="db-edit-pos">
+              <option value="noun">Noun (Danh từ)</option>
+              <option value="verb">Verb (Động từ)</option>
+              <option value="adj">Adjective (Tính từ)</option>
+              <option value="adv">Adverb (Trạng từ)</option>
+              <option value="prep">Preposition (Giới từ)</option>
+              <option value="pron">Pronoun (Đại từ)</option>
+              <option value="conj">Conjunction (Liên từ)</option>
+              <option value="other">Khác</option>
+            </select>
+            <input id="db-edit-basic" placeholder="Nghĩa cơ bản..."/>
+            <textarea id="db-edit-other" placeholder="Định nghĩa mở rộng/ví dụ..."></textarea>
+            <div style="display:flex;gap:8px">
+              <button class="btn-save" onclick="saveDbEdit()">Lưu thay đổi</button>
+              <button class="btn-cancel" onclick="document.getElementById('db-edit-area').style.display='none'">Hủy</button>
+            </div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+
+    <div class="tree-side">
+      <div class="tree-toolbar">
+        <div class="tree-toolbar-title">Radix-Trie — Visualizer</div>
+      </div>
+      <div class="tree-wrap" id="tree-wrap">
+        <canvas id="tree-canvas"></canvas>
+      </div>
+      <div class="tree-legend">
+        <div class="leg"><div class="leg-dot" style="background:var(--green)"></div>Node kết thúc</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--fg3);border:1px solid var(--border2)"></div>Node nội bộ</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div>Đang duyệt</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--blue)"></div>Tìm thấy</div>
+        <div class="leg"><div class="leg-dot" style="background:var(--red)"></div>Xóa</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════
+   RADIX TRIE
+════════════════════════════════════ */
+class RNode {
+  constructor() {
+    this.ch = {};
+    this.def = null;
+    this.end = false;
+    this.id = (++RNode._id).toString(36);
+  }
+}
+RNode._id = 0;
+
+class RadixTrie {
+  constructor() { this.root = new RNode(); this.size = 0; }
+
+  _cp(a, b) { let i = 0; while (i < a.length && i < b.length && a[i] === b[i]) i++; return i; }
+
+  insert(word, defObj) {
+    const existed = this.exactSearch(word) !== null;
+    let node = this.root, rem = word;
+    outer: while (rem.length) {
+      for (const key of Object.keys(node.ch)) {
+        const cp = this._cp(rem, key);
+        if (!cp) continue;
+        if (cp === key.length) { node = node.ch[key]; rem = rem.slice(cp); continue outer; }
+        const old = node.ch[key];
+        const split = new RNode();
+        split.ch[key.slice(cp)] = old;
+        delete node.ch[key];
+        node.ch[key.slice(0, cp)] = split;
+        if (cp < rem.length) {
+          const leaf = new RNode(); leaf.end = true; leaf.def = defObj;
+          split.ch[rem.slice(cp)] = leaf;
+        } else { split.end = true; split.def = defObj; }
+        if (!existed) this.size++;
+        return;
+      }
+      const leaf = new RNode(); leaf.end = true; leaf.def = defObj;
+      node.ch[rem] = leaf;
+      if (!existed) this.size++;
+      return;
+    }
+    if (!node.end) { node.end = true; node.def = defObj; if (!existed) this.size++; }
+    else { node.def = defObj; }
+  }
+
+  exactSearch(word) {
+    let node = this.root, rem = word;
+    while (rem.length) {
+      let found = false;
+      for (const key of Object.keys(node.ch)) {
+        if (rem.startsWith(key)) { node = node.ch[key]; rem = rem.slice(key.length); found = true; break; }
+      }
+      if (!found) return null;
+    }
+    return node.end ? node.def : null;
+  }
+
+  prefixSearch(prefix, limit = 50) {
+    let node = this.root, rem = prefix, walked = '';
+    while (rem.length) {
+      let found = false;
+      for (const key of Object.keys(node.ch)) {
+        if (rem.startsWith(key)) { 
+          node = node.ch[key]; 
+          walked += key; 
+          rem = rem.slice(key.length); 
+          found = true; 
+          break; 
+        }
+        if (key.startsWith(rem)) { 
+          node = node.ch[key]; 
+          walked += key; // <--- Lưu lại toàn bộ đoạn text của node
+          rem = ''; 
+          found = true; 
+          break; 
+        }
+      }
+      if (!found) return [];
+    }
+    const res = [];
+    // FIX: Dùng biến 'walked' (chuỗi đầy đủ tới node) thay vì 'prefix' (chuỗi user gõ)
+    this._collect2(node, walked, res, limit);
+    return res;
+  }
+
+  _collect2(node, prefix, out, limit) {
+    if (out.length >= limit) return;
+    if (node.end) out.push({ word: prefix, def: node.def });
+    for (const [k, child] of Object.entries(node.ch).sort()) this._collect2(child, prefix + k, out, limit);
+  }
+
+  delete(word) {
+    const existed = this.exactSearch(word) !== null;
+    if (!existed) return false;
+    this._del(this.root, word);
+    this.size = Math.max(0, this.size - 1);
+    return true;
+  }
+
+  _del(node, rem) {
+    if (!rem.length) { node.end = false; node.def = null; return Object.keys(node.ch).length === 0; }
+    for (const key of Object.keys(node.ch)) {
+      if (rem.startsWith(key)) {
+        const child = node.ch[key];
+        if (this._del(child, rem.slice(key.length))) { delete node.ch[key]; }
+        else if (!child.end && Object.keys(child.ch).length === 1) {
+          const [ck] = Object.keys(child.ch);
+          node.ch[key + ck] = child.ch[ck]; delete node.ch[key];
+        }
+        return !node.end && !Object.keys(node.ch).length;
+      }
+    }
+    return false;
+  }
+
+  all() { const r = []; this._collect2(this.root, '', r, 9999); return r; }
+
+  getPath(word) {
+    const path = [this.root];
+    let node = this.root, rem = word;
+    while (rem.length) {
+      let found = false;
+      for (const key of Object.keys(node.ch)) {
+        if (rem.startsWith(key)) { node = node.ch[key]; path.push(node); rem = rem.slice(key.length); found = true; break; }
+      }
+      if (!found) break;
+    }
+    return path;
+  }
+}
+
+/* ════════════════════════════════════
+   CANVAS TREE RENDERER
+════════════════════════════════════ */
+class TreeRenderer {
+  constructor(canvasId, wrapperId) {
+    this.canvas = document.getElementById(canvasId);
+    this.wrap = document.getElementById(wrapperId);
+    this.ctx = this.canvas.getContext('2d');
+    this.nodeList = [];
+    this.hlNodes = new Set();
+    this.hlType = 'find';
+    this.animQ = [];
+    this.animTimer = null;
+    this.speed = 350; // Đặt tốc độ mặc định nhanh gọn
+    this.dpr = window.devicePixelRatio || 1;
+    new ResizeObserver(() => this.draw()).observe(this.wrap);
+    this.canvas.addEventListener('click', e => this._onClick(e));
+    this.canvas.addEventListener('mousemove', e => this._onHover(e));
+    this.onNodeClick = null;
+  }
+
+  _dark() { return !document.documentElement.hasAttribute('data-light'); }
+  _c(name) { return getComputedStyle(document.documentElement).getPropertyValue('--' + name).trim(); }
+
+  _calcLeaves(node) {
+    const keys = Object.keys(node.ch);
+    if (!keys.length) { node._leaves = 1; return 1; }
+    let leaves = 0;
+    for (const k of keys) leaves += this._calcLeaves(node.ch[k]);
+    node._leaves = leaves;
+    return leaves;
+  }
+
+  _layout(node, prefix, label, depth, xMin, xMax, out) {
+    const cx = (xMin + xMax) / 2;
+    const y = 44 + depth * 82;
+    out.push({ node, prefix, label, x: cx, y });
+    const keys = Object.keys(node.ch).sort();
+    if (!keys.length) return;
+    const totalLeaves = keys.reduce((sum, k) => sum + (node.ch[k]._leaves || 1), 0);
+    const totalWidth = xMax - xMin;
+    let currentX = xMin;
+    keys.forEach((k) => {
+      const child = node.ch[k];
+      const childLeaves = child._leaves || 1;
+      const childWidth = totalLeaves > 0 ? (childLeaves / totalLeaves) * totalWidth : 0;
+      this._layout(child, prefix + k, k, depth + 1, currentX, currentX + childWidth, out);
+      currentX += childWidth;
+    });
+  }
+
+  draw() {
+    const totalLeaves = this._calcLeaves(trie.root);
+    const W = Math.max(this.wrap.clientWidth, totalLeaves * 65);
+    this.nodeList = [];
+    this._layout(trie.root, '', '★', 0, 20, W - 20, this.nodeList);
+    const maxY = this.nodeList.length ? Math.max(...this.nodeList.map(n => n.y)) + 72 : 380;
+    const H = Math.max(maxY, this.wrap.clientHeight || 380);
+    const dpr = this.dpr;
+    this.canvas.width = W * dpr; this.canvas.height = H * dpr;
+    this.canvas.style.width = W + 'px'; this.canvas.style.height = H + 'px';
+    const ctx = this.ctx;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    this._drawEdges(ctx);
+    this._drawNodes(ctx);
+  }
+
+  _hlColor() {
+    const map = { add: 'green', find: 'blue', del: 'red', notfind: 'red' };
+    return this._c(map[this.hlType] || 'blue');
+  }
+
+  _drawEdges(ctx) {
+    const hlColor = this._hlColor();
+    const baseColor = this._c('fg3');
+    this.nodeList.forEach(item => {
+      if (item.prefix === '') return;
+      const parPfx = item.prefix.slice(0, item.prefix.length - item.label.length);
+      const par = this.nodeList.find(n => n.prefix === parPfx);
+      if (!par) return;
+      const isHl = this.hlNodes.has(item.node) && this.hlNodes.has(par.node);
+      const x1 = par.x, y1 = par.y + 19, x2 = item.x, y2 = item.y - 19;
+      const cpx = (x1 + x2) / 2, cpy = (y1 + y2) / 2;
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.quadraticCurveTo(cpx, cpy + 5, x2, y2);
+      ctx.strokeStyle = isHl ? hlColor : baseColor;
+      ctx.lineWidth = isHl ? 2 : 0.8;
+      ctx.globalAlpha = isHl ? 1 : 0.45;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      const mx = x1 * 0.42 + x2 * 0.58, my = y1 * 0.42 + y2 * 0.58;
+      const lab = item.label.length > 12 ? item.label.slice(0, 11) + '…' : item.label;
+      ctx.font = `500 10px 'Martian Mono', monospace`;
+      const tw = ctx.measureText(lab).width;
+      ctx.fillStyle = this._dark() ? this._c('bg2') : this._c('bg');
+      this._pill(ctx, mx - tw / 2 - 5, my - 9, tw + 10, 14, 5);
+      ctx.fill();
+      if (isHl) { ctx.strokeStyle = hlColor; ctx.lineWidth = 1; ctx.stroke(); }
+      ctx.fillStyle = isHl ? hlColor : this._c('fg3');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(lab, mx, my + 0.5);
+    });
+  }
+
+  _drawNodes(ctx) {
+    const hlColor = this._hlColor();
+    this.nodeList.forEach(item => {
+      const isHl = this.hlNodes.has(item.node);
+      const isEnd = item.node.end;
+      const isRoot = item.prefix === '';
+      const r = 19;
+      if (isHl) {
+        ctx.beginPath(); ctx.arc(item.x, item.y, r + 8, 0, Math.PI * 2);
+        ctx.fillStyle = hlColor + '28'; ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(item.x, item.y, r, 0, Math.PI * 2);
+      let fill, stroke, tc;
+      if (isHl) { fill = hlColor; stroke = hlColor; tc = '#000'; }
+      else if (isRoot) { fill = this._c('fg'); stroke = this._c('fg'); tc = this._c('bg'); } 
+      else if (isEnd) { fill = this._c('green') + '22'; stroke = this._c('green'); tc = this._c('green'); } 
+      else { fill = this._c('bg3'); stroke = this._c('border2'); tc = this._c('fg3'); }
+      ctx.fillStyle = fill; ctx.fill();
+      ctx.strokeStyle = stroke; ctx.lineWidth = isEnd || isHl ? 1.5 : 1; ctx.stroke();
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = tc;
+      if (isRoot) {
+        ctx.font = `600 10px 'Martian Mono', monospace`; ctx.fillText('ROOT', item.x, item.y);
+      } else if (isEnd) {
+        const s = item.prefix.length > 5 ? item.prefix.slice(0, 4) + '…' : item.prefix;
+        ctx.font = `500 9.5px 'Martian Mono', monospace`; ctx.fillText(s, item.x, item.y);
+      } else {
+        ctx.font = `400 16px serif`; ctx.fillText('·', item.x, item.y + 1);
+      }
+      if ((isEnd || isHl) && !isRoot) {
+        const s = item.prefix.length > 10 ? item.prefix.slice(0, 9) + '…' : item.prefix;
+        ctx.font = `400 8.5px 'Martian Mono', monospace`;
+        ctx.fillStyle = isHl ? hlColor : this._c('fg3');
+        ctx.fillText(s, item.x, item.y + r + 10);
+      }
+    });
+  }
+
+  _pill(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  _onClick(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    for (const item of this.nodeList) {
+      if (Math.hypot(x - item.x, y - item.y) < 22) {
+        if (this.onNodeClick) this.onNodeClick(item); break;
+      }
+    }
+  }
+
+  _onHover(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    this.canvas.style.cursor = this.nodeList.some(n => Math.hypot(x - n.x, y - n.y) < 22) ? 'pointer' : 'default';
+  }
+
+  animateSteps(steps, type, label, onComplete) {
+    clearTimeout(this.animTimer);
+    this.hlType = type;
+    let i = 0;
+    const info = document.getElementById('step-info');
+    if (info) { info.className = 'step-info active'; info.textContent = label || 'Đang chạy...'; }
+    
+    const next = () => {
+      if (i >= steps.length) {
+        if (info) { info.className = 'step-info'; info.textContent = 'Xong'; }
+        if (onComplete) onComplete();
+        return;
+      }
+      this.hlNodes = new Set(steps[i]);
+      this.draw();
+
+      // --- TỰ ĐỘNG CUỘN ĐẾN NODE ĐANG DUYỆT ---
+      const currentNode = steps[i][steps[i].length - 1];
+      const visualNode = this.nodeList.find(n => n.node === currentNode);
+      if (visualNode && this.wrap) {
+        this.wrap.scrollTo({
+          left: visualNode.x - this.wrap.clientWidth / 2,
+          top: Math.max(0, visualNode.y - this.wrap.clientHeight / 2 + 50),
+          behavior: 'smooth'
+        });
+      }
+      // ----------------------------------------
+
+      if (info) info.textContent = `Bước ${i + 1} / ${steps.length}`;
+      i++;
+      this.animTimer = setTimeout(next, this.speed);
+    };
+    next();
+  }
+
+  highlight(nodes, type) {
+    this.hlNodes = new Set(nodes);
+    this.hlType = type;
+    this.draw();
+
+    // Tự động cuộn khi highlight thẳng 1 kết quả
+    if (nodes && nodes.length > 0) {
+      const lastNode = nodes[nodes.length - 1];
+      const visualNode = this.nodeList.find(n => n.node === lastNode);
+      if (visualNode && this.wrap) {
+        this.wrap.scrollTo({
+          left: visualNode.x - this.wrap.clientWidth / 2,
+          top: Math.max(0, visualNode.y - this.wrap.clientHeight / 2 + 50),
+          behavior: 'smooth'
+        });
+      }
+    }
+  }
+
+  reset() { this.hlNodes = new Set(); this.draw(); }
+}
+
+/* ════════════════════════════════════
+   STATE & DEFAULTS
+════════════════════════════════════ */
+const trie = new RadixTrie();
+let renderer;
+let currentWord = null;
+let selectedDbWord = null;
+
+let pendingDelete = null;
+let pendingDeleteTimer = null;
+
+const DEFAULTS = [
+  ['abstract',    { pos: 'adj', basic: 'Trừu tượng', other: 'Khó hiểu, không cụ thể. Ví dụ: Abstract art.' }],
+  ['access',      { pos: 'noun', basic: 'Sự truy cập', other: '(verb) Truy cập vào. Ví dụ: Access the database.' }],
+  ['account',     { pos: 'noun', basic: 'Tài khoản', other: 'Bản báo cáo, lời giải thích. Ví dụ: User account.' }],
+  ['address',     { pos: 'noun', basic: 'Địa chỉ', other: '(verb) Giải quyết một vấn đề. Ví dụ: IP address.' }],
+  ['algorithm',   { pos: 'noun', basic: 'Thuật toán', other: 'Tập hợp các bước logic để giải quyết bài toán.' }],
+  ['application', { pos: 'noun', basic: 'Ứng dụng phần mềm', other: 'Đơn xin việc. Ví dụ: Mobile application.' }],
+  ['artificial',  { pos: 'adj', basic: 'Nhân tạo', other: 'Không phải tự nhiên. Ví dụ: Artificial Intelligence (AI).' }],
+  ['backup',      { pos: 'noun', basic: 'Bản sao lưu', other: 'Sự dự phòng dữ liệu.' }],
+  ['binary',      { pos: 'adj', basic: 'Nhị phân', other: 'Hệ đếm cơ số 2 (chỉ gồm 0 và 1).' }],
+  ['browser',     { pos: 'noun', basic: 'Trình duyệt web', other: 'Phần mềm để lướt web (Chrome, Edge, Firefox...).' }],
+  ['buffer',      { pos: 'noun', basic: 'Bộ nhớ đệm', other: 'Vùng lưu trữ dữ liệu tạm thời.' }],
+  ['bug',         { pos: 'noun', basic: 'Lỗi phần mềm', other: 'Con bọ, côn trùng. Ví dụ: Fix a bug.' }],
+  ['cache',       { pos: 'noun', basic: 'Bộ nhớ cache', other: 'Nơi lưu trữ dữ liệu truy cập nhanh.' }],
+  ['cloud',       { pos: 'noun', basic: 'Đám mây', other: 'Hệ thống máy chủ lưu trữ từ xa (Cloud computing).' }],
+  ['code',        { pos: 'noun', basic: 'Mã nguồn', other: 'Mật mã. (verb) Lập trình.' }],
+  ['compile',     { pos: 'verb', basic: 'Biên dịch', other: 'Dịch mã nguồn thành ngôn ngữ máy.' }],
+  ['complex',     { pos: 'adj', basic: 'Phức tạp', other: '(noun) Khu liên hợp.' }],
+  ['connect',     { pos: 'verb', basic: 'Kết nối', other: 'Ghép nối các thành phần lại với nhau.' }],
+  ['data',        { pos: 'noun', basic: 'Dữ liệu', other: 'Thông tin thô chưa qua xử lý.' }],
+  ['database',    { pos: 'noun', basic: 'Cơ sở dữ liệu', other: 'Hệ thống lưu trữ dữ liệu có cấu trúc.' }],
+  ['debug',       { pos: 'verb', basic: 'Gỡ lỗi', other: 'Quá trình tìm và sửa lỗi trong mã nguồn.' }],
+  ['default',     { pos: 'noun', basic: 'Mặc định', other: 'Giá trị hoặc trạng thái ban đầu.' }],
+  ['design',      { pos: 'verb', basic: 'Thiết kế', other: '(noun) Bản thiết kế, kiểu dáng.' }],
+  ['device',      { pos: 'noun', basic: 'Thiết bị', other: 'Công cụ máy móc. Ví dụ: Smart device.' }],
+  ['digital',     { pos: 'adj', basic: 'Kỹ thuật số', other: 'Biểu diễn bằng con số (thường là 0 và 1).' }],
+  ['domain',      { pos: 'noun', basic: 'Tên miền', other: 'Lĩnh vực, phạm vi. Ví dụ: Domain name.' }],
+  ['dynamic',     { pos: 'adj', basic: 'Năng động', other: 'Động (thay đổi linh hoạt trong lập trình).' }],
+  ['element',     { pos: 'noun', basic: 'Phần tử', other: 'Yếu tố cấu thành. Ví dụ: HTML element.' }],
+  ['encrypt',     { pos: 'verb', basic: 'Mã hóa', other: 'Biến đổi dữ liệu để bảo mật.' }],
+  ['error',       { pos: 'noun', basic: 'Lỗi', other: 'Sự sai sót trong quá trình thực thi.' }],
+  ['execute',     { pos: 'verb', basic: 'Thực thi', other: 'Chạy một chương trình hoặc lệnh.' }],
+  ['format',      { pos: 'noun', basic: 'Định dạng', other: '(verb) Định dạng lại ổ đĩa/văn bản.' }],
+  ['function',    { pos: 'noun', basic: 'Chức năng, Hàm', other: 'Khối lệnh thực hiện một nhiệm vụ cụ thể.' }],
+  ['global',      { pos: 'adj', basic: 'Toàn cầu', other: 'Toàn cục (phạm vi biến trong lập trình).' }],
+  ['hardware',    { pos: 'noun', basic: 'Phần cứng', other: 'Các thiết bị vật lý của máy tính.' }],
+  ['host',        { pos: 'noun', basic: 'Máy chủ lưu trữ', other: 'Người chủ nhà.' }],
+  ['index',       { pos: 'noun', basic: 'Chỉ mục', other: 'Bảng mục lục giúp tra cứu nhanh.' }],
+  ['input',       { pos: 'noun', basic: 'Dữ liệu đầu vào', other: 'Thông tin đưa vào hệ thống.' }],
+  ['interface',   { pos: 'noun', basic: 'Giao diện', other: 'Nơi tiếp xúc/tương tác giữa người và máy.' }],
+  ['logic',       { pos: 'noun', basic: 'Luận lý', other: 'Cách suy luận chặt chẽ, hợp lý.' }],
+  ['memory',      { pos: 'noun', basic: 'Bộ nhớ', other: 'Trí nhớ của con người hoặc RAM máy tính.' }],
+  ['module',      { pos: 'noun', basic: 'Mô-đun', other: 'Một phần riêng biệt cấu thành hệ thống lớn.' }],
+  ['network',     { pos: 'noun', basic: 'Mạng lưới', other: 'Hệ thống các máy tính kết nối với nhau.' }],
+  ['node',        { pos: 'noun', basic: 'Nút, giao điểm', other: 'Một điểm trong mạng hoặc cấu trúc cây.' }],
+  ['object',      { pos: 'noun', basic: 'Đối tượng', other: 'Khái niệm cơ bản trong Lập trình hướng đối tượng (OOP).' }],
+  ['output',      { pos: 'noun', basic: 'Dữ liệu đầu ra', other: 'Kết quả sau khi xử lý.' }],
+  ['protocol',    { pos: 'noun', basic: 'Giao thức', other: 'Tập hợp các quy tắc giao tiếp mạng (HTTP, FTP...).' }],
+  ['query',       { pos: 'noun', basic: 'Truy vấn', other: 'Câu lệnh yêu cầu trích xuất dữ liệu từ Database.' }],
+  ['static',      { pos: 'adj', basic: 'Tĩnh', other: 'Không thay đổi. Đối lập với Dynamic.' }],
+  ['system',      { pos: 'noun', basic: 'Hệ thống', other: 'Tập hợp các thành phần hoạt động cùng nhau.' }],
+];
+DEFAULTS.forEach(([w, d]) => trie.insert(w, d));
+
+/* ════════════════════════════════════
+   THEME
+════════════════════════════════════ */
+function toggleTheme() {
+  const isLight = document.documentElement.hasAttribute('data-light');
+  if (isLight) document.documentElement.removeAttribute('data-light');
+  else document.documentElement.setAttribute('data-light', '');
+  const btn = document.getElementById('theme-btn');
+  btn.innerHTML = isLight
+    ? `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+    : `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  if (renderer) renderer.draw();
+}
+
+/* ════════════════════════════════════
+   TABS
+════════════════════════════════════ */
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.tab[onclick*="${tab}"]`).classList.add('active');
+  
+  document.getElementById('tab-search').style.display = tab === 'search' ? 'flex' : 'none';
+  const dbTab = document.getElementById('tab-db');
+  dbTab.classList.toggle('active', tab === 'db');
+
+  if (tab === 'db') {
+    renderDbList();
+    initRenderer();
+    setTimeout(() => renderer.draw(), 50);
+  }
+}
+
+/* ════════════════════════════════════
+   TOAST
+════════════════════════════════════ */
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.innerHTML = (type === 'ok' ? '✓ ' : '✕ ') + msg;
+  t.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = '', 2800);
+}
+
+/* ════════════════════════════════════
+   UPDATE BADGE
+════════════════════════════════════ */
+function updateBadge() {
+  document.getElementById('word-badge').textContent = trie.size + ' từ';
+}
+
+/* ════════════════════════════════════
+   SEARCH + AUTOCOMPLETE
+════════════════════════════════════ */
+let selectedIdx = -1;
+
+document.getElementById('search-input').addEventListener('input', onSearchInput);
+document.getElementById('search-input').addEventListener('keydown', onSearchKey);
+
+function onSearchInput() {
+  const val = document.getElementById('search-input').value.trim().toLowerCase();
+  document.getElementById('clear-btn').classList.toggle('hidden', !val);
+  selectedIdx = -1;
+  renderSuggestions(val);
+}
+
+function renderSuggestions(q) {
+  const box = document.getElementById('suggestions');
+  if (!q) {
+    box.innerHTML = `<div class="sug-empty"><span class="big">⌕</span>Gõ để tìm từ trong từ điển</div>`;
+    return;
+  }
+  const results = trie.prefixSearch(q, 40);
+  if (!results.length) {
+    box.innerHTML = `<div class="sug-empty"><span class="big">∅</span>Không tìm thấy từ nào bắt đầu bằng "<strong>${q}</strong>"</div>`;
+    return;
+  }
+  box.innerHTML = results.map((r, i) => {
+    const w = r.word;
+    const defObj = r.def;
+    const hl = w.startsWith(q) ? `<span class="match">${w.slice(0, q.length)}</span>${w.slice(q.length)}` : w;
+    const exact = w === q;
+    return `<div class="suggestion-item ${exact ? 'exact' : ''}" data-i="${i}" data-word="${w}" onclick="selectWord('${w}')">
+      <div class="sug-word">${hl}</div>
+      <div class="sug-def"><span class="sug-pos">${defObj.pos}</span> ${defObj.basic}</div>
+    </div>`;
+  }).join('');
+}
+
+function onSearchKey(e) {
+  const items = document.querySelectorAll('.suggestion-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); selectedIdx = Math.min(selectedIdx + 1, items.length - 1); highlightSug(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); selectedIdx = Math.max(selectedIdx - 1, 0); highlightSug(items); }
+  else if (e.key === 'Enter') {
+    if (selectedIdx >= 0 && items[selectedIdx]) items[selectedIdx].click();
+    else {
+      const val = document.getElementById('search-input').value.trim().toLowerCase();
+      if (val) selectWord(val);
+    }
+  }
+}
+
+function highlightSug(items) {
+  items.forEach((el, i) => el.classList.toggle('selected', i === selectedIdx));
+  if (items[selectedIdx]) items[selectedIdx].scrollIntoView({ block: 'nearest' });
+}
+
+function formatDefHtml(defObj) {
+  let html = `<div class="def-basic">${defObj.basic}</div>`;
+  if (defObj.other) {
+    html += `<div class="def-other">${defObj.other}</div>`;
+  }
+  return html;
+}
+
+function selectWord(word) {
+  const defObj = trie.exactSearch(word);
+  currentWord = word;
+  document.getElementById('search-input').value = word;
+  document.getElementById('clear-btn').classList.remove('hidden');
+  renderSuggestions(word);
+
+  const empty = document.getElementById('result-empty');
+  const content = document.getElementById('result-content');
+  
+  if (defObj !== null) {
+    empty.classList.add('hidden'); content.classList.remove('hidden');
+    document.getElementById('r-word').textContent = word;
+    document.getElementById('r-pos').textContent = `● ${defObj.pos}`;
+    document.getElementById('r-def').innerHTML = formatDefHtml(defObj);
+    document.getElementById('edit-form').classList.remove('show');
+  } else {
+    empty.classList.remove('hidden'); content.classList.add('hidden');
+    toast('Từ "' + word + '" không có trong từ điển', 'err');
+  }
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('clear-btn').classList.add('hidden');
+  document.getElementById('suggestions').innerHTML = `<div class="sug-empty"><span class="big">⌕</span>Gõ để tìm từ trong từ điển</div>`;
+  document.getElementById('result-empty').classList.remove('hidden');
+  document.getElementById('result-content').classList.add('hidden');
+  currentWord = null;
+  document.getElementById('search-input').focus();
+}
+
+function toggleEdit(cancel = false) {
+  const form = document.getElementById('edit-form');
+  if (cancel) { form.classList.remove('show'); return; }
+  form.classList.toggle('show');
+  if (form.classList.contains('show')) {
+    const defObj = trie.exactSearch(currentWord);
+    if(defObj) {
+      document.getElementById('edit-pos').value = defObj.pos || 'other';
+      document.getElementById('edit-basic').value = defObj.basic || '';
+      document.getElementById('edit-other').value = defObj.other || '';
+    }
+    document.getElementById('edit-basic').focus();
+  }
+}
+
+function saveEdit() {
+  const p = document.getElementById('edit-pos').value;
+  const b = document.getElementById('edit-basic').value.trim();
+  const o = document.getElementById('edit-other').value.trim();
+  
+  if (!b) { toast('Nghĩa cơ bản không được trống', 'err'); return; }
+  
+  const newDefObj = { pos: p, basic: b, other: o };
+  trie.insert(currentWord, newDefObj);
+  
+  document.getElementById('r-pos').textContent = `● ${p}`;
+  document.getElementById('r-def').innerHTML = formatDefHtml(newDefObj);
+  
+  toggleEdit(true);
+  toast('Đã cập nhật "' + currentWord + '"');
+}
+
+function showInTree() {
+  if (!currentWord) return;
+  switchTab('db');
+  setTimeout(() => {
+    const steps = buildPathSteps(currentWord);
+    renderer.animateSteps(steps, 'find', '');
+  }, 120);
+}
+
+/* ════════════════════════════════════
+   CENTRALIZED DELETE FUNCTION
+════════════════════════════════════ */
+// Hàm này lo toàn bộ việc tìm kiếm trên cây -> chuyển sang đỏ -> tiến hành xóa
+function requestDelete(word, skipConfirm = false) {
+  if (!skipConfirm && !confirm(`Xóa từ "${word}" khỏi từ điển?`)) return;
+
+  // Nếu người dùng ấn xóa liên tục, bỏ qua hiệu ứng rườm rà và xóa thật sự từ cũ ngay lập tức
+  if (pendingDelete) {
+      clearTimeout(pendingDeleteTimer);
+      if (renderer) clearTimeout(renderer.animTimer);
+      executeDelete(pendingDelete);
+      pendingDelete = null;
+  }
+
+  const dbTabActive = document.getElementById('tab-db').classList.contains('active');
+
+  // Nếu cây đang được hiển thị, thực hiện hiệu ứng
+  if (renderer && dbTabActive) {
+      pendingDelete = word;
+      const steps = buildPathSteps(word);
+      
+      // 1. Hiệu ứng tìm (xanh)
+      renderer.animateSteps(steps, 'find', '', () => {
+          // 2. Chuyển sang đỏ
+          renderer.hlType = 'del';
+          renderer.draw();
+          
+          // 3. Chờ 0.6s để người dùng thấy đỏ, rồi xóa
+          pendingDeleteTimer = setTimeout(() => {
+              executeDelete(word);
+              pendingDelete = null;
+              renderer.reset();
+          }, 600);
+      });
+  } else {
+      // Nếu cây bị ẩn (đang ở tab Search) -> xóa ngay không cần chờ hiệu ứng
+      executeDelete(word);
+  }
+}
+
+// Hàm thực thi xóa thật sự ở Data
+function executeDelete(word) {
+  trie.delete(word);
+  toast('Đã xóa "' + word + '"', 'err');
+  
+  if (selectedDbWord === word) {
+    selectedDbWord = null;
+    document.getElementById('db-detail').style.display = 'none';
+  }
+  if (currentWord === word) {
+    clearSearch();
+  }
+  
+  renderDbList(); 
+  updateBadge();
+  if (renderer) renderer.draw();
+}
+
+// Bắt các Event xóa chuyển hết về hàm trung tâm
+function deleteCurrentWord() { requestDelete(currentWord); }
+function dbDeleteSelected() { requestDelete(selectedDbWord); }
+function dbQuickDel(word) { requestDelete(word, true); } // Ấn "X" trên list thì xóa lẹ không cần confirm
+function dbExactDelete() {
+  const word = document.getElementById('db-exact-input').value.trim().toLowerCase();
+  if (!word) return;
+  if (trie.exactSearch(word)) {
+    requestDelete(word);
+    document.getElementById('db-exact-input').value = '';
+  } else {
+    toast(`Không tìm thấy từ "${word}" để xóa`, 'err');
+  }
+}
+
+/* ════════════════════════════════════
+   DATABASE & TREE TAB MERGED
+════════════════════════════════════ */
+function renderDbList() {
+  const filterTxt = (document.getElementById('db-search')?.value || '').toLowerCase();
+  const filterPos = document.getElementById('db-filter-pos')?.value || '';
+  
+  const words = trie.all().filter(w => {
+    const matchTxt = !filterTxt || w.word.includes(filterTxt);
+    const matchPos = !filterPos || w.def.pos === filterPos;
+    return matchTxt && matchPos;
+  }).sort((a, b) => a.word.localeCompare(b.word));
+  
+  const box = document.getElementById('db-list');
+  box.innerHTML = words.map(w => `
+    <div class="db-item ${selectedDbWord === w.word ? 'active-item' : ''}" onclick="selectDbWord('${w.word}')">
+      <span>${w.word} <span style="font-size:0.6rem;opacity:0.6;margin-left:4px">${w.def.pos}</span></span>
+      <button class="db-item-del" onclick="event.stopPropagation();dbQuickDel('${w.word}')">×</button>
+    </div>
+  `).join('') || '<div style="padding:20px;text-align:center;color:var(--fg3);font-size:.75rem">Trống</div>';
+}
+
+function dbExactSearch() {
+  const word = document.getElementById('db-exact-input').value.trim().toLowerCase();
+  if (!word) return;
+  const defObj = trie.exactSearch(word);
+  if (defObj) {
+    selectDbWord(word);
+    document.getElementById('db-exact-input').value = '';
+    const activeItem = document.querySelector('.db-item.active-item');
+    if (activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } else {
+    toast(`Không tìm thấy từ "${word}"`, 'err');
+  }
+}
+
+function selectDbWord(word) {
+  selectedDbWord = word;
+  renderDbList();
+  const defObj = trie.exactSearch(word);
+  const detail = document.getElementById('db-detail');
+  detail.style.display = 'flex';
+  detail.style.flexDirection = 'column';
+  
+  document.getElementById('db-detail-word').textContent = word;
+  document.getElementById('db-detail-pos').textContent = `● ${defObj.pos}`;
+  document.getElementById('db-detail-def').innerHTML = formatDefHtml(defObj);
+  
+  document.getElementById('db-edit-area').style.display = 'none';
+  
+  if (renderer) {
+    const steps = buildPathSteps(word);
+    renderer.animateSteps(steps, 'find', '');
+  }
+}
+
+function startDbEdit() {
+  const area = document.getElementById('db-edit-area');
+  area.style.display = area.style.display === 'none' ? 'flex' : 'none';
+  if (area.style.display !== 'none') {
+    const defObj = trie.exactSearch(selectedDbWord);
+    document.getElementById('db-edit-pos').value = defObj.pos || 'other';
+    document.getElementById('db-edit-basic').value = defObj.basic || '';
+    document.getElementById('db-edit-other').value = defObj.other || '';
+    document.getElementById('db-edit-basic').focus();
+  }
+}
+
+function saveDbEdit() {
+  const p = document.getElementById('db-edit-pos').value;
+  const b = document.getElementById('db-edit-basic').value.trim();
+  const o = document.getElementById('db-edit-other').value.trim();
+  
+  if (!b) { toast('Nghĩa cơ bản không được trống', 'err'); return; }
+  
+  const newDefObj = { pos: p, basic: b, other: o };
+  trie.insert(selectedDbWord, newDefObj);
+  
+  document.getElementById('db-detail-pos').textContent = `● ${p}`;
+  document.getElementById('db-detail-def').innerHTML = formatDefHtml(newDefObj);
+  
+  document.getElementById('db-edit-area').style.display = 'none';
+  toast('Đã cập nhật "' + selectedDbWord + '"');
+  if (renderer) renderer.draw();
+}
+
+function addWord() {
+  const w = document.getElementById('new-word').value.trim().toLowerCase().replace(/[^a-z]/g, '');
+  const p = document.getElementById('new-pos').value;
+  const b = document.getElementById('new-basic').value.trim();
+  const o = document.getElementById('new-other').value.trim();
+  
+  if (!w) { toast('Nhập từ tiếng Anh (chỉ chữ cái)', 'err'); return; }
+  if (!b) { toast('Nhập nghĩa cơ bản', 'err'); return; }
+  
+  const defObj = { pos: p, basic: b, other: o };
+  trie.insert(w, defObj);
+  
+  document.getElementById('new-word').value = '';
+  document.getElementById('new-pos').value = 'noun';
+  document.getElementById('new-basic').value = '';
+  document.getElementById('new-other').value = '';
+  
+  toast('Đã thêm "' + w + '"');
+  
+  selectedDbWord = w;
+  renderDbList(); updateBadge();
+  
+  const detail = document.getElementById('db-detail');
+  detail.style.display = 'flex';
+  detail.style.flexDirection = 'column';
+  document.getElementById('db-detail-word').textContent = w;
+  document.getElementById('db-detail-pos').textContent = `● ${defObj.pos}`;
+  document.getElementById('db-detail-def').innerHTML = formatDefHtml(defObj);
+  document.getElementById('db-edit-area').style.display = 'none';
+
+  if (renderer) {
+    const steps = buildPathSteps(w);
+    renderer.animateSteps(steps, 'add', '');
+  }
+}
+
+/* ════════════════════════════════════
+   TREE RENDER SETUP
+════════════════════════════════════ */
+function initRenderer() {
+  if (!renderer) {
+    renderer = new TreeRenderer('tree-canvas', 'tree-wrap');
+    renderer.onNodeClick = (item) => {
+      if (item.node.end) {
+        selectDbWord(item.prefix);
+      }
+    };
+  }
+}
+
+function buildPathSteps(word) {
+  const steps = [];
+  let node = trie.root, rem = word;
+  steps.push([trie.root]);
+  const visited = [trie.root];
+  while (rem.length) {
+    let found = false;
+    for (const key of Object.keys(node.ch)) {
+      if (rem.startsWith(key)) {
+        node = node.ch[key]; visited.push(node); rem = rem.slice(key.length);
+        steps.push([...visited]); found = true; break;
+      }
+    }
+    if (!found) break;
+  }
+  return steps;
+}
+
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  updateBadge();
+  renderSuggestions('');
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      switchTab('search');
+      document.getElementById('search-input').focus();
+    }
+  });
+});
+</script>
+</body>
+</html>
